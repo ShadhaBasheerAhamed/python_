@@ -38,7 +38,7 @@ export default function TeacherDashboard({ onClose }) {
         setIsAuthenticated(true);
         fetchTeacherData();
       } else {
-        setPinError('Invalid Teacher PIN. (Hint: 0626)');
+        setPinError('Invalid Teacher PIN.');
       }
     } catch (err) {
       if (pinInput === '0626') {
@@ -178,7 +178,7 @@ export default function TeacherDashboard({ onClose }) {
               <input
                 type="password"
                 maxLength={6}
-                placeholder="Enter PIN (0626)"
+                placeholder="Enter PIN"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 autoFocus
