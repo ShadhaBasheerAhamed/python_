@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0B0F19] text-slate-100 antialiased min-h-screen selection:bg-emerald-500 selection:text-white;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Fredoka', 'Outfit', sans-serif;
+  }
+
+  code, pre, .font-code {
+    font-family: 'Fira Code', monospace;
+  }
+}
+
+/* Custom 3D Gaming Buttons */
+.btn-game-emerald {
+  @apply bg-emerald-400 text-slate-950 font-black rounded-2xl shadow-[0_5px_0_#059669] hover:bg-emerald-300 active:translate-y-1 active:shadow-[0_1px_0_#059669] transition-all duration-150;
+}
+
+.btn-game-indigo {
+  @apply bg-indigo-500 text-white font-black rounded-2xl shadow-[0_5px_0_#4338ca] hover:bg-indigo-400 active:translate-y-1 active:shadow-[0_1px_0_#4338ca] transition-all duration-150;
+}
+
+.btn-game-amber {
+  @apply bg-amber-400 text-slate-950 font-black rounded-2xl shadow-[0_5px_0_#d97706] hover:bg-amber-300 active:translate-y-1 active:shadow-[0_1px_0_#d97706] transition-all duration-150;
+}
+
+/* Custom CSS Keyframe Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes floatGlow {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.15; }
+  50% { transform: scale(1.08) translate(10px, -10px); opacity: 0.25; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 2.5s ease-in-out infinite;
+}
+
+.animate-float-glow {
+  animation: floatGlow 6s ease-in-out infinite;
+}
+
+/* Glassmorphism card class */
+.glass-panel {
+  @apply bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 shadow-2xl;
+}
+
+/* Custom Select Dropdown Styling */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2310B981%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.25rem center;
+  background-size: 0.75rem auto;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10B981;
+}
+
