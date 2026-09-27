@@ -2,10 +2,24 @@ import React from 'react';
 import { Star, Award, ArrowRight, Sparkles } from 'lucide-react';
 import { playSound } from '../utils/soundEffects';
 
-export default function RewardModal({ levelId, stars, xpEarned, newBadges, onContinue }) {
+export default function RewardModal({ levelId, stars, xpEarned, newBadges, onNextLevel, onViewMap, onContinue }) {
+  const hasNext = levelId < 22;
+
+  const handleNextLevel = () => {
+    playSound('click');
+    if (onNextLevel) onNextLevel();
+    else if (onContinue) onContinue();
+  };
+
+  const handleViewMap = () => {
+    playSound('click');
+    if (onViewMap) onViewMap();
+    else if (onContinue) onContinue();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="max-w-md w-full bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in font-game">
+      <div className="max-w-md w-full bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl relative overflow-hidden">
         
         {/* Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-500/20 rounded-full filter blur-3xl pointer-events-none" />
@@ -27,11 +41,11 @@ export default function RewardModal({ levelId, stars, xpEarned, newBadges, onCon
         </div>
 
         {/* Stars Display */}
-        <div className="flex items-center justify-center gap-2 py-2">
+        <div className="flex items-center justify-center gap-2 py-1">
           {[1, 2, 3].map((s) => (
             <Star
               key={s}
-              className={`w-10 h-10 transition-transform ${
+              className={`w-9 h-9 transition-transform ${
                 s <= stars
                   ? 'text-yellow-400 fill-yellow-400 scale-110 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]'
                   : 'text-slate-700'
@@ -41,7 +55,7 @@ export default function RewardModal({ levelId, stars, xpEarned, newBadges, onCon
         </div>
 
         {/* XP Earned Card */}
-        <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3.5 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-300">XP Gained</span>
           <span className="text-2xl font-black text-amber-400 flex items-center gap-1">
             ⚡ +{xpEarned} XP
@@ -59,14 +73,29 @@ export default function RewardModal({ levelId, stars, xpEarned, newBadges, onCon
           </div>
         )}
 
-        {/* Continue Button */}
-        <button
-          onClick={() => { playSound('click'); onContinue(); }}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black py-4 px-6 rounded-2xl shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 text-base transition transform active:scale-95"
-        >
-          <span>CONTINUE QUEST</span>
-          <ArrowRight className="w-5 h-5" />
-        </button>
+        {/* Action Buttons */}
+        <div className="space-y-2.5 pt-2">
+          {hasNext ? (
+            <button
+              onClick={handleNextLevel}
+              className="w-full btn-game-emerald py-3.5 px-6 text-sm flex items-center justify-center gap-2"
+            >
+              <span>NEXT LEVEL {levelId + 1} →</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : null}
+
+          <button
+            onClick={handleViewMap}
+            className={`w-full py-3 px-6 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+              hasNext
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                : 'btn-game-emerald py-3.5 text-sm'
+            }`}
+          >
+            <span>EXPLORE QUEST MAP 🗺️</span>
+          </button>
+        </div>
 
       </div>
     </div>

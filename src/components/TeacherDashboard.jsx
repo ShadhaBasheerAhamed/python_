@@ -37,33 +37,38 @@ export default function TeacherDashboard({ onClose }) {
       if (res.ok) {
         setIsAuthenticated(true);
         fetchTeacherData();
-      } else {
-        setPinError('Invalid Teacher PIN.');
+        return;
       }
     } catch (err) {
-      if (pinInput === '0626') {
-        setIsAuthenticated(true);
-        loadMockTeacherData();
-      } else {
-        setPinError('Invalid Teacher PIN.');
-      }
+      // Offline fallback
+    }
+
+    if (pinInput === '0626') {
+      setIsAuthenticated(true);
+      loadMockTeacherData();
+    } else {
+      setPinError('Invalid Teacher PIN. Default PIN: 0626');
     }
   };
 
   const fetchTeacherData = async () => {
     try {
       const [ovRes, stRes, tpRes] = await Promise.all([
-        fetch('/api/teacher/overview'),
-        fetch(`/api/teacher/students?grade=${encodeURIComponent(gradeFilter)}&section=${encodeURIComponent(sectionFilter)}&search=${encodeURIComponent(searchQuery)}`),
-        fetch('/api/teacher/topic-analytics')
+        fetch('/api/teacher/overview').catch(() => null),
+        fetch(`/api/teacher/students?grade=${encodeURIComponent(gradeFilter)}&section=${encodeURIComponent(sectionFilter)}&search=${encodeURIComponent(searchQuery)}`).catch(() => null),
+        fetch('/api/teacher/topic-analytics').catch(() => null)
       ]);
 
-      if (ovRes.ok) setOverview(await ovRes.json());
-      if (stRes.ok) setStudents(await stRes.json());
-      if (tpRes.ok) setTopicAnalytics(await tpRes.json());
+      if (ovRes && ovRes.ok && stRes && stRes.ok && tpRes && tpRes.ok) {
+        setOverview(await ovRes.json());
+        setStudents(await stRes.json());
+        setTopicAnalytics(await tpRes.json());
+        return;
+      }
     } catch (err) {
-      loadMockTeacherData();
+      console.warn('Teacher data fetch failed:', err);
     }
+    loadMockTeacherData();
   };
 
   const loadMockTeacherData = () => {

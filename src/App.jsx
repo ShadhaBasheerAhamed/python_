@@ -60,6 +60,17 @@ export default function App() {
 
   // Handle Student Login
   const handleStudentLogin = async ({ grade, section, name }) => {
+    const profileKey = `${grade}-${section}-${name.trim().toLowerCase()}`;
+    
+    // Check if we have cached profile in localStorage first
+    const cachedStudentData = localStorage.getItem(`python_quest_student_${profileKey}`);
+    let localSaved = null;
+    if (cachedStudentData) {
+      try {
+        localSaved = JSON.parse(cachedStudentData);
+      } catch (e) {}
+    }
+
     try {
       const res = await fetch('/api/students/login', {
         method: 'POST',
@@ -77,39 +88,56 @@ export default function App() {
         if (data.isReturning) {
           setWelcomeBackMsg(`Welcome back, ${data.student.name}! 🌟 Continue your Python Quest from Level ${data.student.current_level || 1}.`);
         }
+        return;
       } else {
-        throw new Error('Failed to connect to backend server');
+        throw new Error('Server returned non-ok status');
       }
     } catch (err) {
-      // Offline fallback profile creation/retrieval
-      const profileKey = `${grade}-${section}-${name.trim().toLowerCase()}`;
-      const localProfile = {
-        id: Date.now(),
-        name: name.trim(),
-        grade,
-        section,
-        profile_key: profileKey,
-        current_level: 1,
-        xp: 0,
-        stars: 0,
-        streak: 1,
-        focus_interruptions: 0
-      };
-      setStudent(localProfile);
-      setProgress([{ level_id: 1, topic: 'Python Introduction', status: 'unlocked', stars: 0 }]);
-      setBadges([{ badge_key: 'python_starter', badge_name: '🐍 Python Starter' }]);
+      // Offline / Static host fallback profile creation/retrieval
+      if (localSaved && localSaved.student) {
+        setStudent(localSaved.student);
+        setProgress(localSaved.progress || [{ level_id: 1, topic: 'Python Introduction', status: 'unlocked', stars: 0 }]);
+        setBadges(localSaved.badges || [{ badge_key: 'python_starter', badge_name: '🐍 Python Starter' }]);
+        setAttempts(localSaved.attempts || []);
+        setWelcomeBackMsg(`Welcome back, ${localSaved.student.name}! 🌟 Pick up your Quest from Level ${localSaved.student.current_level || 1}.`);
+      } else {
+        const localProfile = {
+          id: Date.now(),
+          name: name.trim(),
+          grade,
+          section,
+          profile_key: profileKey,
+          current_level: 1,
+          xp: 0,
+          stars: 0,
+          streak: 1,
+          focus_interruptions: 0
+        };
+        setStudent(localProfile);
+        const initialProgress = [{ level_id: 1, topic: 'Python Introduction', status: 'unlocked', stars: 0 }];
+        const initialBadges = [{ badge_key: 'python_starter', badge_name: '🐍 Python Starter' }];
+        setProgress(initialProgress);
+        setBadges(initialBadges);
+        localStorage.setItem(`python_quest_student_${profileKey}`, JSON.stringify({
+          student: localProfile,
+          progress: initialProgress,
+          badges: initialBadges,
+          attempts: []
+        }));
+      }
       setActiveTab('dashboard');
     }
   };
 
   // Complete Level Handler
   const handleLevelComplete = async ({ level_id, stars, xp_earned, score, topic }) => {
+    let completedRemotely = false;
     try {
       const res = await fetch('/api/progress/complete-level', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          student_id: student.id,
+          student_id: student?.id,
           level_id,
           stars,
           xp_earned,
@@ -128,33 +156,78 @@ export default function App() {
           levelId: level_id,
           stars,
           xpEarned: xp_earned,
-          newBadges: data.newBadgesEarned
+          newBadges: data.newBadgesEarned || []
         });
+        completedRemotely = true;
       }
     } catch (err) {
-      // Offline fallback — update progress array properly so next level unlocks
-      const updatedXP = (student.xp || 0) + xp_earned;
-      const updatedStars = (student.stars || 0) + stars;
-      const nextLevel = Math.max(student.current_level || 1, level_id + 1);
+      console.warn('Network completion failed, using client fallback:', err);
+    }
 
-      const updatedStudent = { ...student, xp: updatedXP, stars: updatedStars, current_level: nextLevel };
+    if (!completedRemotely) {
+      // Offline / Static deploy fallback — always executes if backend server is not available!
+      const updatedXP = (student?.xp || 0) + xp_earned;
+      const updatedStars = (student?.stars || 0) + stars;
+      const nextLevel = Math.max(student?.current_level || 1, level_id + 1);
+
+      const updatedStudent = {
+        ...(student || {}),
+        xp: updatedXP,
+        stars: updatedStars,
+        current_level: nextLevel
+      };
       setStudent(updatedStudent);
 
-      // Update progress: mark current level complete + unlock next level
+      // Update progress: mark current level completed + unlock next level
+      let nextProgressList = [];
       setProgress(prev => {
-        const updated = prev.filter(p => p.level_id !== level_id && p.level_id !== nextLevel);
-        updated.push({ level_id, topic, status: 'completed', stars });
+        const currentList = Array.isArray(prev) ? prev : [];
+        const filtered = currentList.filter(p => p.level_id !== level_id && p.level_id !== nextLevel);
+        filtered.push({ level_id, topic: topic || `Level ${level_id}`, status: 'completed', stars });
         if (nextLevel <= 22) {
-          updated.push({ level_id: nextLevel, topic: `Level ${nextLevel}`, status: 'unlocked', stars: 0 });
+          filtered.push({ level_id: nextLevel, topic: `Level ${nextLevel}`, status: 'unlocked', stars: 0 });
         }
-        return updated;
+        nextProgressList = filtered;
+        return filtered;
       });
 
+      // Calculate badges locally
+      const newBadgesEarned = [];
+      const currentBadgeKeys = new Set((badges || []).map(b => b.badge_key));
+
+      if (level_id === 1 && !currentBadgeKeys.has('level_1_master')) {
+        newBadgesEarned.push({ badge_key: 'level_1_master', badge_name: '🌱 Python Explorer', description: 'Mastered Level 1' });
+      }
+      if (nextLevel >= 5 && !currentBadgeKeys.has('code_novice')) {
+        newBadgesEarned.push({ badge_key: 'code_novice', badge_name: '⭐ Code Novice', description: 'Reached Level 5' });
+      }
+      if (nextLevel >= 10 && !currentBadgeKeys.has('code_warrior')) {
+        newBadgesEarned.push({ badge_key: 'code_warrior', badge_name: '⚔️ Code Warrior', description: 'Reached Level 10' });
+      }
+      if (stars === 3 && !currentBadgeKeys.has('star_collector')) {
+        newBadgesEarned.push({ badge_key: 'star_collector', badge_name: '🌟 Star Hunter', description: 'Earned 3 Stars in a level' });
+      }
+
+      if (newBadgesEarned.length > 0) {
+        setBadges(prev => [...prev, ...newBadgesEarned]);
+      }
+
+      // Save to student specific localStorage
+      if (student?.profile_key) {
+        localStorage.setItem(`python_quest_student_${student.profile_key}`, JSON.stringify({
+          student: updatedStudent,
+          progress: nextProgressList,
+          badges: [...(badges || []), ...newBadgesEarned],
+          attempts
+        }));
+      }
+
+      // Show reward popup!
       setRewardData({
         levelId: level_id,
         stars,
         xpEarned: xp_earned,
-        newBadges: []
+        newBadges: newBadgesEarned
       });
     }
   };
@@ -304,6 +377,20 @@ export default function App() {
           stars={rewardData.stars}
           xpEarned={rewardData.xpEarned}
           newBadges={rewardData.newBadges}
+          onNextLevel={() => {
+            const nextLvl = rewardData.levelId + 1;
+            setRewardData(null);
+            if (nextLvl <= 22) {
+              setActiveLevelId(nextLvl);
+              setActiveTab('level');
+            } else {
+              setActiveTab('map');
+            }
+          }}
+          onViewMap={() => {
+            setRewardData(null);
+            setActiveTab('map');
+          }}
           onContinue={() => {
             setRewardData(null);
             setActiveTab('map');

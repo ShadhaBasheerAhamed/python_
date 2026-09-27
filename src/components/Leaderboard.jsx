@@ -22,21 +22,32 @@ export default function Leaderboard({ student }) {
       if (res.ok) {
         const data = await res.json();
         setLeaderboardData(data);
-      } else {
-        // Fallback local mock leaderboard data if server not reachable
-        setLeaderboardData([
-          { id: student?.id || 1, name: student?.name || 'Arun', grade: student?.grade || 'Grade 8', section: student?.section || 'A', current_level: student?.current_level || 4, xp: student?.xp || 680, stars: student?.stars || 42, streak: student?.streak || 4 },
-          { id: 2, name: 'Rohan Verma', grade: 'Grade 8', section: 'A', current_level: 6, xp: 1180, stars: 38, streak: 5 },
-          { id: 3, name: 'Sanya Gupta', grade: 'Grade 8', section: 'B', current_level: 5, xp: 1090, stars: 35, streak: 3 },
-          { id: 4, name: 'Ananya Roy', grade: 'Grade 7', section: 'A', current_level: 4, xp: 820, stars: 28, streak: 2 },
-          { id: 5, name: 'Kabir Das', grade: 'Grade 9', section: 'C', current_level: 7, xp: 750, stars: 24, streak: 1 }
-        ]);
+        return;
       }
     } catch (e) {
       console.warn('Leaderboard fetch fallback:', e);
     } finally {
       setLoading(false);
     }
+
+    // Dynamic offline fallback leaderboard with current student and grade-matched peers
+    const baseClassmates = [
+      { id: student?.id || 100, name: student?.name || 'Marven', grade: student?.grade || 'Grade 11', section: student?.section || 'G', current_level: student?.current_level || 1, xp: student?.xp || 0, stars: student?.stars || 0, streak: student?.streak || 1 },
+      { id: 101, name: 'Aarav Sharma', grade: student?.grade || 'Grade 11', section: 'A', current_level: 6, xp: 1250, stars: 18, streak: 5 },
+      { id: 102, name: 'Diya Patel', grade: student?.grade || 'Grade 11', section: 'G', current_level: 5, xp: 980, stars: 15, streak: 3 },
+      { id: 103, name: 'Rohan Verma', grade: student?.grade || 'Grade 11', section: 'B', current_level: 4, xp: 720, stars: 11, streak: 2 },
+      { id: 104, name: 'Sanya Gupta', grade: 'Grade 10', section: 'A', current_level: 7, xp: 1450, stars: 21, streak: 6 },
+      { id: 105, name: 'Kabir Das', grade: 'Grade 9', section: 'C', current_level: 8, xp: 1680, stars: 24, streak: 7 },
+      { id: 106, name: 'Ananya Roy', grade: 'Grade 8', section: 'A', current_level: 4, xp: 820, stars: 12, streak: 2 }
+    ];
+
+    let filtered = baseClassmates;
+    if (selectedGrade !== 'All') filtered = filtered.filter(s => s.grade === selectedGrade);
+    if (selectedSection !== 'All') filtered = filtered.filter(s => s.section === selectedSection);
+    if (filtered.length === 0 && student) filtered = [baseClassmates[0]];
+    filtered.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+    setLeaderboardData(filtered);
+    setLoading(false);
   };
 
   useEffect(() => {
